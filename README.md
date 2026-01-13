@@ -31,8 +31,6 @@ The primary objective of this project is to develop and evaluate machine learnin
 
 ## Contributors
 
-**Project Team:**
-
 - Zhe Wang
 - Virat Talan
 - Yicheng Wang
