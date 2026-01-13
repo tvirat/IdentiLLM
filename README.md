@@ -1,22 +1,37 @@
 # IdentiLLM: Classifying Large Language Models through Machine Learning
 
+## Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Contributors](#contributors)
+3. [Executive Summary](#executive-summary)
+4. [Technical Setup](#technical-setup)
+5. [Dataset Description](#dataset-description)
+6. [Model Families Explored](#model-families-explored)
+   - [Random Forests](#1-random-forests)
+   - [Softmax Regression](#2-softmax-regression-multinomial-logistic-regression)
+   - [Neural Networks](#3-neural-networks)
+7. [Evaluation Metrics](#evaluation-metrics)
+8. [Results and Performance Analysis](#results-and-performance-analysis)
+9. [Tools and Technologies](#tools-and-technologies)
+10. [Implementation Notes](#implementation-notes)
+11. [Limitations and Future Work](#limitations-and-future-work)
+12. [Conclusion](#conclusion)
+13. [References](#references)
+
+---
+
 ## Project Overview
 
 IdentiLLM is a machine learning classification system designed to identify and distinguish between different Large Language Model (LLM) families based on student usage patterns and feedback. This project was developed as part of CSC311: Introduction to Machine Learning at the University of Toronto.
 
-### Project Objectives
-
 The primary objective of this project is to develop and evaluate machine learning models capable of classifying user experiences with three major LLM platforms: ChatGPT, Claude, and Gemini. By analyzing student responses regarding their interactions with these models, we aim to identify distinguishing characteristics that can reliably predict which LLM was being evaluated.
-
-### Key Findings
-
-After comprehensive evaluation of three distinct model families, the Neural Network architecture achieved the best overall performance with a test accuracy of 67.4%. This model demonstrated superior stability and generalization capabilities across multiple evaluation metrics, including precision, recall, and F1 scores.
 
 ---
 
 ## Contributors
 
-**Project Team**
+**Project Team:**
 
 - Zhe Wang
 - Virat Talan
