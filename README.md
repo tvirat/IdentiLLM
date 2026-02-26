@@ -27,6 +27,7 @@ IdentiLLM is a machine learning classification system designed to identify and d
 
 The primary objective of this project is to develop and evaluate machine learning models capable of classifying user experiences with three major LLM platforms: ChatGPT, Claude, and Gemini. By analyzing student responses regarding their interactions with these models, we aim to identify distinguishing characteristics that can reliably predict which LLM was being evaluated.
 
+<img width="1919" height="862" alt="image" src="https://github.com/user-attachments/assets/e739ef35-44af-492c-bbc8-14d0f423265b" />
 ---
 
 ## Contributors
