@@ -19,6 +19,8 @@ streamlit run app.py
 ```
 
 The dashboard will automatically open in your default web browser at `http://localhost:8501`
+<img width="1919" height="862" alt="image" src="https://github.com/user-attachments/assets/c3a48a6e-514d-4631-a38b-3c9ef4d6b5e1" />
+
 
 ### Features
 
