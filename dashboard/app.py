@@ -5,8 +5,22 @@ A Streamlit-based UI for the IdentiLLM project
 
 import streamlit as st
 import pandas as pd
-from pred_example import predict
+import sys
+from pathlib import Path
+
+# Add parent directory to path so we can import pred.py
+parent_dir = Path(__file__).parent.parent
+sys.path.insert(0, str(parent_dir))
+
+import pred
+from pred import predict_all
 from questions import LIKELIHOOD_OPTIONS, LIKERT_OPTIONS, QUESTIONS
+
+MODEL_OPTIONS = {
+    "Neural Network": "neural_network",
+    "Softmax Regression": "softmax",
+    "Random Forest": "random_forest",
+}
 
 # Page configuration
 st.set_page_config(
@@ -98,6 +112,8 @@ if 'selected_features' not in st.session_state:
     st.session_state.selected_features = {}
 if 'prediction_result' not in st.session_state:
     st.session_state.prediction_result = None
+if 'selected_model' not in st.session_state:
+    st.session_state.selected_model = "Neural Network"
 
 # Main application
 def main():
@@ -124,6 +140,16 @@ def main():
             for label, count in label_counts.items():
                 st.write(f"**{label}:** {count}")
         
+        st.markdown("---")
+        st.markdown("### 🧠 Prediction Model")
+        selected_model_label = st.radio(
+            "Choose the model used for prediction:",
+            options=list(MODEL_OPTIONS.keys()),
+            index=list(MODEL_OPTIONS.keys()).index(st.session_state.selected_model),
+            key="model_radio"
+        )
+        st.session_state.selected_model = selected_model_label
+
         st.markdown("---")
         st.markdown("### About")
         st.info("This dashboard allows you to input feature values and predict which LLM (ChatGPT, Claude, or Gemini) is being described.")
@@ -252,8 +278,11 @@ def main():
                 row_data.update(st.session_state.selected_features)
                 row = pd.Series(row_data)
                 
+                # Set the active model on the pred module before predicting
+                pred.MODEL = MODEL_OPTIONS[st.session_state.selected_model]
+
                 # Make prediction
-                prediction = predict(row)
+                prediction = predict_all(row)
                 st.session_state.prediction_result = prediction
                 st.success("✅ Prediction completed!")
             else:
@@ -274,14 +303,20 @@ def main():
                     st.markdown(f"**{feature}:**")
                     st.text(str(value)[:100] + "..." if len(str(value)) > 100 else str(value))
             
-            # Model confidence visualization (placeholder)
+            # Model information
             st.markdown("---")
             st.markdown("### Model Information")
-            st.info("""
-            **Model Type:** Neural Network  
-            **Test Accuracy:** 67.4%  
-            **Classes:** ChatGPT, Claude, Gemini
-            """)
+            model_descriptions = {
+                "Neural Network": "Multi-layer Perceptron (MLP) with 2 hidden layers of 16 units each and ReLU activations.",
+                "Softmax Regression": "Multinomial Logistic Regression trained with L-BFGS solver (C=0.5).",
+                "Random Forest": "Ensemble of 200 decision trees (entropy criterion, max depth 8).",
+            }
+            current_model = st.session_state.selected_model
+            st.info(
+                f"**Model:** {current_model}  \n"
+                f"{model_descriptions[current_model]}  \n"
+                f"**Classes:** ChatGPT, Claude, Gemini"
+            )
             
         else:
             st.info("👆 Select feature values and click 'Make Prediction' to see the result.")

@@ -15,6 +15,16 @@ import numpy as np
 import pandas as pd
 import re
 
+# ============================================================
+# MODEL SELECTION  –  change this value to switch the model
+# used for prediction.
+# Options:
+#   "neural_network"  – MLP loaded from mlp_params.npy (default)
+#   "softmax"         – Multinomial Logistic Regression (sklearn)
+#   "random_forest"   – Random Forest Classifier (sklearn)
+# ============================================================
+MODEL = "neural_network"
+
 VOCAB = ['about', 'ai', 'also', 'an', 'and', 'another', 'answer', 'answers',
          'are', 'as', 'ask', 'asked', 'asking', 'at', 'be', 'because',
          'but', 'by', 'can', 'check', 'code', 'coding', 'complex',
@@ -181,7 +191,7 @@ def get_X(df):
         if c in df.columns:
             df[c] = df[c].fillna("NA")
 
-    df = reformat_rename(df.drop(columns=["label"]))
+    df = reformat_rename(df.drop(columns=["label"], errors="ignore"))
     df = make_bow(df, VOCAB)
 
     # We need to esnure that all required columns exist first
@@ -245,43 +255,103 @@ def make_bow(df, vocab):
     return df_final
 
 
-def predict_all(filename):
-    # Load and clean dataset
-    df = pd.read_csv(filename, keep_default_na=True, skipinitialspace=True)
-    X = get_X(df)
+def _get_sklearn_model(model_name, training_csv="training_data_clean.csv"):
+    """
+    Load a pre-trained sklearn model from disk, or train and cache it if
+    no saved model file exists yet.
 
-    # Load the parameters
+    Saved files:
+        softmax_model.pkl      – multinomial LogisticRegression
+        random_forest_model.pkl – RandomForestClassifier
+    """
+    import pickle, os
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.ensemble import RandomForestClassifier
+
+    model_path = f"{model_name}_model.pkl"
+
+    if os.path.exists(model_path):
+        with open(model_path, "rb") as f:
+            return pickle.load(f)
+
+    # --- Train from scratch on the training data --------------------------
+    print(f"[pred.py] No saved model found at '{model_path}'. "
+          f"Training {model_name} on '{training_csv}'...")
+
+    train_df = pd.read_csv(training_csv, keep_default_na=True,
+                           skipinitialspace=True)
+    # Keep only rows that have a label
+    train_df = train_df[train_df[TARGET].notna()].reset_index(drop=True)
+
+    X_train = get_X(train_df)
+    y_train = train_df[TARGET].values
+
+    if model_name == "softmax":
+        model = LogisticRegression(
+            multi_class="multinomial",
+            solver="lbfgs",
+            C=0.5,
+            max_iter=1000
+        )
+    elif model_name == "random_forest":
+        model = RandomForestClassifier(
+            random_state=311,
+            criterion="entropy",
+            n_estimators=200,
+            max_depth=8,
+            min_samples_split=40,
+            min_samples_leaf=10
+        )
+    else:
+        raise ValueError(f"Unknown model name: {model_name}")
+
+    model.fit(X_train, y_train)
+
+    with open(model_path, "wb") as f:
+        pickle.dump(model, f)
+    print(f"[pred.py] Model saved to '{model_path}'.")
+
+    return model
+
+
+def _predict_neural_network(X):
+    """Run a forward pass through the saved MLP and return class-name predictions."""
     params = np.load('mlp_params.npy', allow_pickle=True).item()
     weights = params['weights']
     intercepts = params['intercepts']
 
-    # Extract weights and biases
     W1, b1 = weights[0], intercepts[0]
     W2, b2 = weights[1], intercepts[1]
     W3, b3 = weights[2], intercepts[2]
 
-    # Forward pass through the network
-    # Layer 1 (16 units)
     z1 = X.dot(W1) + b1
-    a1 = np.maximum(0, z1)  # ReLU activation
+    a1 = np.maximum(0, z1)          # ReLU
 
-    # Layer 2 (16 units)
     z2 = a1.dot(W2) + b2
-    a2 = np.maximum(0, z2)  # ReLU activation
+    a2 = np.maximum(0, z2)          # ReLU
 
-    # Output layer (3 units)
     logits = a2.dot(W3) + b3
-
-    # Get predictions (class with highest score)
     predictions = np.argmax(logits, axis=1)
 
-    class_mapping = {
-        0: "ChatGPT",
-        1: "Claude",
-        2: "Gemini"
-    }
+    class_mapping = {0: "ChatGPT", 1: "Claude", 2: "Gemini"}
+    return [class_mapping[p] for p in predictions]
 
-    # Convert to class names
-    class_predictions = [class_mapping[pred] for pred in predictions]
 
-    return class_predictions
+def predict_all(filename):
+    # Load and preprocess the input CSV
+    df = pd.read_csv(filename, keep_default_na=True, skipinitialspace=True)
+    X = get_X(df)
+
+    if MODEL == "neural_network":
+        return _predict_neural_network(X)
+
+    if MODEL in ("softmax", "random_forest"):
+        model = _get_sklearn_model(MODEL)
+        preds = model.predict(X)
+        # sklearn models are trained on string labels; return as-is
+        return list(preds)
+
+    raise ValueError(
+        f"Unknown MODEL '{MODEL}'. "
+        "Choose 'neural_network', 'softmax', or 'random_forest'."
+    )
